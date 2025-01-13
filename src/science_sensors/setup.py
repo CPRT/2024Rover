@@ -25,6 +25,12 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
+            "drive_node = drive.drive_node:main",
+            "drive_station = drive.drive_station:main",
+            "joystick_drive = drive.joystick_drive:main",
+            "roboclaw_node = drive.roboclaw_node:main",
+            "joystick_breakout = drive.joystick_breakout:main",
+            "talon_node = drive.talon_node:main",
             "gas_sensor = science_sensors.gas_sensor:main",
         ],
     },
