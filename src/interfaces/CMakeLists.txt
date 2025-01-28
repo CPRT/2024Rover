@@ -28,6 +28,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ArmPos.srv"
   "srv/ArmCmd.srv"
   "msg/GPIOmsg.msg" #ik its goofy the actual gpio package is GPIO
+  "msg/GasSensorReading.msg"
   "srv/NavToGPSGeopose.srv"
   "srv/VideoOut.srv"
   "srv/KeycapCmd.srv"
