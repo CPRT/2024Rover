@@ -22,7 +22,7 @@ setup(
     maintainer_email="christopherrusu1@gmail.com",
     description="TODO: Package description",
     license="Apache-2.0",
-    tests_require=["pytest"],
+    # tests_require=["pytest"],
     entry_points={
         "console_scripts": [
             "trajectory_interpreter = arm_interface.trajectoryInterpreter:main",
