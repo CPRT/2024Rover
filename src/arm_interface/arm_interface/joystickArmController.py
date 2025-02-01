@@ -129,16 +129,16 @@ class joystickArmController(Node):
         self.wristTurn.mode = 0
         # self.get_logger().info("bruh")
 
-        if msg.axes[0] < -0.2:  # RIGHT BASE, TM AXIS-0 -
+        if msg.axes[0] < -0.1:  # RIGHT BASE, TM AXIS-0 -
             self.base.value = 0.2
-        elif msg.axes[0] > 0.2:  # LEFT BASE, TM AXIS-0 +
+        elif msg.axes[0] > 0.1:  # LEFT BASE, TM AXIS-0 +
             self.base.value = -0.2
         else:
             self.base.value = 0.0
 
-        if msg.axes[4] == 1:  # RIGHT WRIST TURN, TM AXIS-4 +
+        if msg.axes[4] == -1:  # RIGHT WRIST TURN, TM AXIS-4 +
             self.wristTurn.value = 1.0
-        elif msg.axes[4] == -1:  # LEFT WRIST TURN, TM AXIS-4 -
+        elif msg.axes[4] == 1:  # LEFT WRIST TURN, TM AXIS-4 -
             self.wristTurn.value = -1.0
         else:
             self.wristTurn.value = 0.0
