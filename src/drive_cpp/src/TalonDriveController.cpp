@@ -18,7 +18,7 @@ TalonDriveController::TalonDriveController() : Node("talonDrive") {
   this->declare_parameter("linear_cov", 0.3);
   linearCov_ = this->get_parameter("linear_cov").as_double();
   this->declare_parameter("ticks_per_rotation", 2760);
-  this->declare_parameter("wheel_rad", 0.2);
+  this->declare_parameter("wheel_rad", 0.105);
   const double wheelCircumference =
       this->get_parameter("wheel_rad").as_double() * 2 * M_PI;
   ticksPerMeter_ =
@@ -118,9 +118,9 @@ void TalonDriveController::twist_callback(const Twist::SharedPtr msg) {
 
   for (auto &wheel : wheels_) {
     if (wheel.getWheelSide() == WheelSide::LEFT) {
-      wheel.setVelocity(vl);
+      wheel.setVelocity(vl * ticksPerMeter_);
     } else {
-      wheel.setVelocity(-vr);
+      wheel.setVelocity(-vr * ticksPerMeter_);
     }
   }
 }

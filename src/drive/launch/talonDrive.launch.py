@@ -3,6 +3,10 @@ import launch_ros.actions
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
+P = 2.0
+I = 0.012
+D = 0.0
+
 
 def generate_launch_description():
     """Generate launch description with multiple components."""
@@ -20,9 +24,9 @@ def generate_launch_description():
                 name="frontLeft",
                 parameters=[
                     {"id": 1},
-                    {"P": 5.0},
-                    {"I": 0.0},
-                    {"D": 0.0},
+                    {"P": P},
+                    {"I": I},
+                    {"D": D},
                     {"max_voltage": 24.0},
                     {"brake_mode": True},
                 ],
@@ -33,9 +37,9 @@ def generate_launch_description():
                 name="backLeft",
                 parameters=[
                     {"id": 2},
-                    {"P": 5.0},
-                    {"I": 0.0},
-                    {"D": 0.0},
+                    {"P": P},
+                    {"I": I},
+                    {"D": D},
                     {"max_voltage": 24.0},
                     {"brake_mode": True},
                 ],
@@ -46,9 +50,9 @@ def generate_launch_description():
                 name="frontRight",
                 parameters=[
                     {"id": 3},
-                    {"P": 5.0},
-                    {"I": 0.0},
-                    {"D": 0.0},
+                    {"P": P},
+                    {"I": I},
+                    {"D": D},
                     {"max_voltage": 24.0},
                     {"brake_mode": True},
                 ],
@@ -59,9 +63,9 @@ def generate_launch_description():
                 name="backRight",
                 parameters=[
                     {"id": 4},
-                    {"P": 5.0},
-                    {"I": 0.0},
-                    {"D": 0.0},
+                    {"P": P},
+                    {"I": I},
+                    {"D": D},
                     {"max_voltage": 24.0},
                     {"brake_mode": True},
                 ],
@@ -93,8 +97,8 @@ def generate_launch_description():
                 executable="joystick_controller",
                 name="joystick_controller",
                 parameters=[
-                    {"linear_axis_index": 3},
-                    {"turn_axis_index": 2},
+                    {"linear_axis_index": 5},
+                    {"turn_axis_index": 4},
                     {"max_linear_speed": 1.0},
                 ],
             ),
