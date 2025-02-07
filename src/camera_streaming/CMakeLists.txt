@@ -54,3 +54,17 @@ install(DIRECTORY include/
 
 # Install the executable (optional, depending on your needs)
 install(TARGETS camera_streaming DESTINATION lib/${PROJECT_NAME})
+
+# Install launch files (if any)
+# install(DIRECTORY launch
+#   DESTINATION share/${PROJECT_NAME}/launch
+# )
+
+# Install configuration files (if any)
+# install(DIRECTORY config
+#   DESTINATION share/${PROJECT_NAME}/config
+# )
+
+ament_export_include_directories("include/${PROJECT_NAME}")
+
+ament_package()
