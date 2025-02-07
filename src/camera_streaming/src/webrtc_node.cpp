@@ -40,17 +40,20 @@ WebRTCStreamer::~WebRTCStreamer() {
 void WebRTCStreamer::start_video_cb(
     const std::shared_ptr<interfaces::srv::VideoOut::Request> request,
     std::shared_ptr<interfaces::srv::VideoOut::Response> response) {
-  gst_element_set_state(pipeline, GST_STATE_READY);
-
-  GstElement *pipeline = update_pipeline(request);
-
-  if (pipeline != nullptr) {
-    gst_element_set_state(pipeline, GST_STATE_PLAYING);
-    response->success = true;
-    pipeline_ = pipeline;
-  } else {
+  if (pipeline_ == nullptr) {
+    RCLCPP_ERROR(this->get_logger(), "Pipeline not initialized");
     response->success = false;
+    return;
   }
+  gst_element_set_state(pipeline_, GST_STATE_READY);
+  update_pipeline(request);
+  if (pipeline_ == nullptr) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to update pipeline");
+    response->success = false;
+    return;
+  }
+  gst_element_set_state(pipeline_, GST_STATE_PLAYING);
+  response->success = true;
 }
 
 GstElement *WebRTCStreamer::create_source(const std::string &name) {
@@ -62,23 +65,24 @@ GstElement *WebRTCStreamer::create_source(const std::string &name) {
     g_object_set(G_OBJECT(source), "device", source_list_[name].c_str(),
                  nullptr);
   }
-  if (!source) {
+  GstElement *videoconvert = gst_element_factory_make("nvvidconv", nullptr);
+  if (!videoconvert) {
+    RCLCPP_INFO(this->get_logger(),
+                "Failed to create nvvidconv, using videoconvert instead");
+    videoconvert = gst_element_factory_make("videoconvert", nullptr);
+  }
+  if (!source || !videoconvert) {
     RCLCPP_ERROR(this->get_logger(), "Failed to create source for camera: %s",
                  name.c_str());
     return nullptr;
   }
   sources_.push_back(source);
-  GstElement *nvconv = gst_element_factory_make("nvvidconv", nullptr);
-  if (!nvconv) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to create nvvidconv");
-    return nullptr;
-  }
-  gst_bin_add_many(GST_BIN(pipeline_), source, nvconv, nullptr);
-  if (gst_element_link_many(source, nvconv, nullptr) != TRUE) {
+  gst_bin_add_many(GST_BIN(pipeline_), source, videoconvert, nullptr);
+  if (gst_element_link_many(source, videoconvert, nullptr) != TRUE) {
     RCLCPP_ERROR(this->get_logger(), "Failed to link elements");
     return nullptr;
   }
-  return nvconv;
+  return videoconvert;
 }
 
 GstElement *WebRTCStreamer::initialize_pipeline() {
@@ -86,12 +90,22 @@ GstElement *WebRTCStreamer::initialize_pipeline() {
 
   // Create the output element (webrtcsink)
   GstElement *compositor = gst_element_factory_make("nvcompositor", "mix");
+  if (!compositor) {
+    RCLCPP_INFO(this->get_logger(),
+                "Could not create nvcompositor, using compositor instead");
+    compositor = gst_element_factory_make("compositor", "mix");
+  }
   GstElement *queue = gst_element_factory_make("queue", "out_queue");
-  GstElement *nvvidconv = gst_element_factory_make("nvvidconv", "nvvidconv");
+  GstElement *videoconvert = gst_element_factory_make("nvvidconv", "convert");
+  if (!videoconvert) {
+    RCLCPP_INFO(this->get_logger(),
+                "Could not create nvvidconv, using videoconvert instead");
+    videoconvert = gst_element_factory_make("videoconvert", "convert");
+  }
   GstElement *capsfilter = gst_element_factory_make("capsfilter", "capsfilter");
   GstElement *webrtcsink = gst_element_factory_make("webrtcsink", "webrtcsink");
 
-  if (!compositor || !queue || !nvvidconv || !capsfilter || !webrtcsink) {
+  if (!compositor || !queue || !videoconvert || !capsfilter || !webrtcsink) {
     RCLCPP_ERROR(this->get_logger(), "Failed to create webrtc elements");
     return nullptr;
   }
@@ -112,10 +126,10 @@ GstElement *WebRTCStreamer::initialize_pipeline() {
   }
 
   // Add elements to the pipeline
-  gst_bin_add_many(GST_BIN(pipeline), compositor, queue, nvvidconv, capsfilter,
-                   webrtcsink, nullptr);
+  gst_bin_add_many(GST_BIN(pipeline), compositor, queue, videoconvert,
+                   capsfilter, webrtcsink, nullptr);
   // Final linking for the pipeline
-  if (gst_element_link_many(compositor, queue, nvvidconv, capsfilter,
+  if (gst_element_link_many(compositor, queue, videoconvert, capsfilter,
                             webrtcsink, nullptr) != TRUE) {
     RCLCPP_ERROR(this->get_logger(), "Failed to link elements");
     return nullptr;
@@ -124,44 +138,45 @@ GstElement *WebRTCStreamer::initialize_pipeline() {
 }
 
 void WebRTCStreamer::unlink_sources_from_compositor(GstElement *compositor) {
-    GstPad *compositor_pad = gst_element_get_static_pad(compositor, "sink_0");
-    if (!compositor_pad) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to get compositor pad.");
-        return;
-    }
-    GstIterator *pad_iterator = gst_pad_iterate_internal_links(compositor_pad);
-    GstPad *source_pad = nullptr;
-        gboolean done = FALSE;
-    while (!done) {
-        GstPad *linked_pad = nullptr;
-        GstIteratorResult result = gst_iterator_next(pad_iterator, (gpointer *)&linked_pad);
-        
-        switch (result) {
-        case GST_ITERATOR_OK:
-            if (GST_PAD_IS_LINKED(linked_pad)) {
-                gst_pad_unlink(compositor_pad, linked_pad);
-            }
-            break;
-        case GST_ITERATOR_DONE:
-            done = TRUE;
-            break;
-        case GST_ITERATOR_ERROR:
-            RCLCPP_ERROR(this->get_logger(), "Error iterating through pads.");
-            done = TRUE;
-            break;
-        default:
-            break;
+  GstPad *compositor_pad = gst_element_get_static_pad(compositor, "sink_0");
+  if (!compositor_pad) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to get compositor pad.");
+    return;
+  }
+  GstIterator *pad_iterator = gst_pad_iterate_internal_links(compositor_pad);
+  GstPad *source_pad = nullptr;
+  gboolean done = FALSE;
+  while (!done) {
+    GstPad *linked_pad = nullptr;
+    GstIteratorResult result =
+        gst_iterator_next(pad_iterator, (GValue *)linked_pad);
+
+    switch (result) {
+      case GST_ITERATOR_OK:
+        if (GST_PAD_IS_LINKED(linked_pad)) {
+          gst_pad_unlink(compositor_pad, linked_pad);
         }
+        break;
+      case GST_ITERATOR_DONE:
+        done = TRUE;
+        break;
+      case GST_ITERATOR_ERROR:
+        RCLCPP_ERROR(this->get_logger(), "Error iterating through pads.");
+        done = TRUE;
+        break;
+      default:
+        break;
     }
-    gst_iterator_free(pad_iterator);
-    gst_object_unref(compositor_pad);
+  }
+  gst_iterator_free(pad_iterator);
+  gst_object_unref(compositor_pad);
 }
 
 void WebRTCStreamer::unref_sources() {
-    for (auto source : sources_) {
-        gst_object_unref(source);
-    }
-    sources_.clear();
+  for (auto source : sources_) {
+    gst_object_unref(source);
+  }
+  sources_.clear();
 }
 
 GstElement *WebRTCStreamer::update_pipeline(
@@ -177,7 +192,7 @@ GstElement *WebRTCStreamer::update_pipeline(
   }
   unlink_sources_from_compositor(compositor);
   unref_sources();
-  
+
   int i = 0;
   for (const auto &source : request->sources) {
     std::string name = source.name;
@@ -193,8 +208,7 @@ GstElement *WebRTCStreamer::update_pipeline(
       return nullptr;
     }
 
-    if (gst_element_link_many(camera_source, compositor, nullptr) !=
-        TRUE) {
+    if (gst_element_link_many(camera_source, compositor, nullptr) != TRUE) {
       RCLCPP_ERROR(this->get_logger(), "Failed to link elements");
       return nullptr;
     }
