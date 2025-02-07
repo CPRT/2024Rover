@@ -31,10 +31,10 @@ link_directories(
 )
 
 # Add the executable target
-add_executable(camera_streaming src/webrtc_node.cpp)
+add_executable(webrtc_node src/webrtc_node.cpp)
 
 # Link with the required libraries
-target_link_libraries(camera_streaming
+target_link_libraries(webrtc_node
   rclcpp::rclcpp
   ${GSTREAMER_LIBRARIES}
   ${GST_APP_LIBRARIES}
@@ -45,7 +45,7 @@ target_link_libraries(camera_streaming
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 
 # Set up any necessary ROS2 specific configurations
-ament_target_dependencies(camera_streaming rclcpp interfaces)
+ament_target_dependencies(webrtc_node rclcpp interfaces)
 
 # Install header files
 install(DIRECTORY include/
@@ -53,17 +53,17 @@ install(DIRECTORY include/
 )
 
 # Install the executable (optional, depending on your needs)
-install(TARGETS camera_streaming DESTINATION lib/${PROJECT_NAME})
+install(TARGETS webrtc_node DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files (if any)
-# install(DIRECTORY launch
-#   DESTINATION share/${PROJECT_NAME}/launch
-# )
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}/launch
+)
 
 # Install configuration files (if any)
-# install(DIRECTORY config
-#   DESTINATION share/${PROJECT_NAME}/config
-# )
+install(DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}/config
+)
 
 ament_export_include_directories("include/${PROJECT_NAME}")
 

@@ -4,7 +4,7 @@ WebRTCStreamer::WebRTCStreamer() : Node("webrtc_node"), pipeline_(nullptr) {
   gst_init(nullptr, nullptr);
 
   // Declare parameters
-  this->declare_parameter("web_server", false);
+  this->declare_parameter("web_server", true);
   this->declare_parameter("web_server_path", ".");
   this->declare_parameter("camera_name", std::vector<std::string>());
   this->declare_parameter("camera_path", std::vector<std::string>());
@@ -213,19 +213,15 @@ GstElement *WebRTCStreamer::update_pipeline(
       return nullptr;
     }
 
-    // Link compositor properties for positioning
-    g_object_set(G_OBJECT(compositor),
-                 ("sink_" + std::to_string(i) + "::xpos").c_str(), origin_x,
-                 nullptr);
-    g_object_set(G_OBJECT(compositor),
-                 ("sink_" + std::to_string(i) + "::ypos").c_str(), origin_y,
-                 nullptr);
-    g_object_set(G_OBJECT(compositor),
-                 ("sink_" + std::to_string(i) + "::height").c_str(), height,
-                 nullptr);
-    g_object_set(G_OBJECT(compositor),
-                 ("sink_" + std::to_string(i) + "::width").c_str(), width,
-                 nullptr);
+    GstPad *pad = gst_element_get_static_pad(
+        compositor, ("sink_" + std::to_string(i)).c_str());
+    if (!pad) {
+      RCLCPP_ERROR(this->get_logger(), "Failed to get pad");
+      return nullptr;
+    }
+    g_object_set(G_OBJECT(pad), "xpos", origin_x, "ypos", origin_y, "height",
+                 height, "width", width, NULL);
+    gst_object_unref(pad);
     i++;
   }
 
