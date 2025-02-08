@@ -57,12 +57,12 @@ install(TARGETS webrtc_node DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files (if any)
 install(DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME}/launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
 # Install configuration files (if any)
 install(DIRECTORY config
-  DESTINATION share/${PROJECT_NAME}/config
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_export_include_directories("include/${PROJECT_NAME}")

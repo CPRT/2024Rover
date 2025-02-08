@@ -30,8 +30,11 @@ class WebRTCStreamer : public rclcpp::Node {
   std::string web_server_path_;
   std::map<std::string, std::string> source_list_;
   GstElement* pipeline_;
+  GstElement* compositor_;
   rclcpp::Service<interfaces::srv::VideoOut>::SharedPtr start_video_service_;
   std::vector<GstElement*> sources_;
+  static gboolean on_bus_message(GstBus* bus, GstMessage* message,
+                                 gpointer user_data);
 };
 
 #endif  // WEBRTC_STREAMER_HPP
