@@ -10,8 +10,6 @@ WebRTCStreamer::WebRTCStreamer()
   this->declare_parameter("web_server", true);
   this->declare_parameter("web_server_path", ".");
   this->declare_parameter("camera_name", std::vector<std::string>());
-  this->declare_parameter("camera_path", std::vector<std::string>());
-
   this->get_parameter("web_server", web_server_);
   this->get_parameter("web_server_path", web_server_path_);
 
@@ -22,13 +20,26 @@ WebRTCStreamer::WebRTCStreamer()
 
   // Fetch camera parameters
   std::vector<std::string> camera_name;
-  std::vector<std::string> camera_path;
   this->get_parameter("camera_name", camera_name);
-  this->get_parameter("camera_path", camera_path);
 
-  // Map camera names to their paths
-  for (size_t i = 0; i < camera_name.size(); ++i) {
-    source_list_[camera_name[i]] = camera_path[i];
+  for (const auto &name : camera_name) {
+    std::string camera_path;
+    this->declare_parameter(name + ".path", "");
+    this->get_parameter(name + ".path", camera_path);
+    if (camera_path.empty()) {
+      RCLCPP_ERROR(this->get_logger(), "Camera path not set for %s",
+                   name.c_str());
+      continue;
+    }
+    this->declare_parameter(name + ".type",
+                            static_cast<int>(CameraType::kV4l2Src));
+    int camera_type;
+    this->get_parameter(name + ".type", camera_type);
+    CameraSource source;
+    source.name = name;
+    source.path = camera_path;
+    source.type = static_cast<CameraType>(camera_type);
+    source_list_.insert({name, source});
   }
   pipeline_ = initialize_pipeline();
 }
@@ -63,15 +74,22 @@ void WebRTCStreamer::start_video_cb(
 
 GstElement *WebRTCStreamer::create_source(const std::string &name) {
   GstElement *source = nullptr;
-  if (name == "test") {
+  const auto source_desc = source_list_.find(name);
+  if (source_desc == source_list_.end()) {
     source = gst_element_factory_make("videotestsrc", nullptr);
     g_object_set(G_OBJECT(source), "pattern", 0, nullptr);
     g_object_set(G_OBJECT(source), "is-live", TRUE, nullptr);
-  } else {
+  } else if (source_desc->second.type == CameraType::kV4l2Src) {
     source = gst_element_factory_make("v4l2src", nullptr);
-    g_object_set(G_OBJECT(source), "device", source_list_[name].c_str(),
+    g_object_set(G_OBJECT(source), "device", source_desc->second.path.c_str(),
                  nullptr);
+  } else {
+    // TODO: Add support for network source for science cameras
+    RCLCPP_WARN(this->get_logger(), "Unimplemented Type for camera: %s",
+                name.c_str());
+    return nullptr;
   }
+
   GstElement *videoconvert = gst_element_factory_make("nvvidconv", nullptr);
   if (!videoconvert) {
     RCLCPP_INFO(this->get_logger(),

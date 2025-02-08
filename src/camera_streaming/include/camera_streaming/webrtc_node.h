@@ -13,6 +13,12 @@ class WebRTCStreamer : public rclcpp::Node {
  public:
   WebRTCStreamer();
   ~WebRTCStreamer();
+  enum class CameraType { kV4l2Src = 0 };
+  struct CameraSource {
+    std::string name;
+    std::string path;
+    CameraType type;
+  };
 
  private:
   void start_video_cb(
@@ -28,7 +34,7 @@ class WebRTCStreamer : public rclcpp::Node {
 
   bool web_server_;
   std::string web_server_path_;
-  std::map<std::string, std::string> source_list_;
+  std::map<std::string, CameraSource> source_list_;
   GstElement* pipeline_;
   GstElement* compositor_;
   rclcpp::Service<interfaces::srv::VideoOut>::SharedPtr start_video_service_;

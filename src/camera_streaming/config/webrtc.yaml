@@ -3,8 +3,11 @@ webrtc_node:
     camera_name:
     - "Drive"
     - "Secondary"
-    camera_path:
-    - "/dev/v4l/by-id/usb-Arducam_Arducam_B0495__USB3_2.3MP__Arducam_20231205_0001-video-index0"
-    - "/dev/v4l/by-id/usb-HD_Camera_Manufacturer_USB_2.0_Camera-video-index0"
+    Drive:
+      path: "/dev/v4l/by-id/usb-Arducam_Arducam_B0495__USB3_2.3MP__Arducam_20231205_0001-video-index0"
+      type: 0 # 0 for v4l2, Other types are not supported yet
+    Secondary:
+      path: "/dev/v4l/by-id/usb-HD_Camera_Manufacturer_USB_2.0_Camera-video-index0"
+      type: 0 # 0 for v4l2, Other types are not supported yet
     web_server: true
     web_server_path: "/home/connor/gstreamer/webrtc/gstwebrtc-api/dist"
