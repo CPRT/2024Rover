@@ -93,8 +93,8 @@ def generate_launch_description():
                 executable="joystick_controller",
                 name="joystick_controller",
                 parameters=[
-                    {"linear_axis_index": 3},
-                    {"turn_axis_index": 2},
+                    {"linear_axis_index": 5},
+                    {"turn_axis_index": 4},
                     {"max_linear_speed": 1.0},
                 ],
             ),
