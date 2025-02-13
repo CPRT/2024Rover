@@ -130,9 +130,9 @@ class joystickArmController(Node):
         # self.get_logger().info("bruh")
 
         if msg.axes[0] < -0.1:  # RIGHT BASE, TM AXIS-0 -
-            self.base.value = 0.2
+            self.base.value = -msg.axes[0]
         elif msg.axes[0] > 0.1:  # LEFT BASE, TM AXIS-0 +
-            self.base.value = -0.2
+            self.base.value = -msg.axes[0]
         else:
             self.base.value = 0.0
 
