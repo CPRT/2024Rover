@@ -8,27 +8,34 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include <rclcpp/rclcpp.hpp>
+#include "sensor_msgs/msg/joy.hpp"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include "std_msgs/msg/string.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include "interfaces/msg/arm_cmd.hpp"
-#include "sensor_msgs/msg/joy.hpp"
 
-class JoystickKinPublisher : public rclcpp::Node
+bool isEqual(interfaces::msg::ArmCmd a, interfaces::msg::ArmCmd b);
+
+class JoystickReader : public rclcpp::Node
 {
-public:
-    JoystickKinPublisher();
+  public:
+    JoystickReader();
 
-private:
-    void joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy_msg);
-    
-    rclcpp::TimerBase::SharedPtr timer_;
+  private:
+    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
     rclcpp::Publisher<interfaces::msg::ArmCmd>::SharedPtr publisher_;
-    rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscriber_;
-    double defSpeed = 10.0;
+    interfaces::msg::ArmCmd oldCmd;
+    rclcpp::TimerBase::SharedPtr timer_;
+    bool shouldPub = false;
+		
+    void topic_callback(const sensor_msgs::msg::Joy::SharedPtr msg);
+    
+    void publish_message();
+    
+    
 };
 
+int main(int argc, char ** argv);
 
 #endif

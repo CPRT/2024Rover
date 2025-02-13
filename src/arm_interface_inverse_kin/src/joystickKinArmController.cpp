@@ -1,18 +1,27 @@
 #include "joystickKinArmController.h"
 
+using std::placeholders::_1;
 using namespace std::chrono_literals;
 
-JoystickKinPublisher::JoystickKinPublisher(): Node("minimal_publisher"){
-  publisher_ = this->create_publisher<interfaces::msg::ArmCmd>("arm_base_commands", 10);
-  //timer_ = this->create_wall_timer(500ms, std::bind(&JoystickKinPublisher::timer_callback, this));
-  subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
-        "joy", 10, std::bind(&JoystickKinPublisher::joy_callback, this, std::placeholders::_1)
-    );
+bool isEqual(interfaces::msg::ArmCmd a, interfaces::msg::ArmCmd b)
+{
+  return a == b;
 }
 
-void JoystickKinPublisher::joy_callback(const sensor_msgs::msg::Joy::SharedPtr joy_msg){
-	//form pose command message
-    interfaces::msg::ArmCmd poseCmd = [&]{
+JoystickReader::JoystickReader()
+: Node("JoystickReader")
+{
+  subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
+  "joy", 10, std::bind(&JoystickReader::topic_callback, this, _1));
+  publisher_ = this->create_publisher<interfaces::msg::ArmCmd>("arm_base_commands", 2);
+  timer_ = this->create_wall_timer(
+  300ms, std::bind(&JoystickReader::publish_message, this));//*/
+}
+
+
+void JoystickReader::topic_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
+{
+  interfaces::msg::ArmCmd poseCmd = []{
 		interfaces::msg::ArmCmd msg;
 		msg.pose.position.x = 0;
 		msg.pose.position.y = 0;
@@ -21,48 +30,94 @@ void JoystickKinPublisher::joy_callback(const sensor_msgs::msg::Joy::SharedPtr j
 		msg.pose.orientation.y = 0;
 		msg.pose.orientation.z = 0;
 		msg.pose.orientation.w = 0;
-		msg.speed = defSpeed; //ask Will how the default is set and how it changes. and like what speed even means in this context.
-		// its not speed. its step size, 10 is to make it smooth as it moves.
-		msg.named_pose = 0;
+		msg.speed = 10;
 		msg.estop = false;
 		msg.reset = false;
-		msg.query_goal_state = false;
 		return msg;
 	}();
-	//form geo message message for current position
-	//dont know what those numbers are for yet... starting position? zero'd? Will didnt know.
-	geometry_msgs::msg::Pose current_pose = []{
-		geometry_msgs::msg::Pose msg;
-		msg.orientation.w = 1.0;
-		msg.position.x = 0.636922;
-		msg.position.y = 0.064768;
-		msg.position.z = 0.678810;
-		return msg;
-	}();
-
-	//joystick commands
-	if (joy_msg->axes[5] > 0.25) {
-    poseCmd.pose.position.x = 1;
-	} 
-	else if (joy_msg->axes[5] < -0.25) {
-    poseCmd.pose.position.x = -1;
-	} else {poseCmd.pose.position.x = 0;}
-
-	if (joy_msg->axes[4] > 0.25) {
+  if (msg->axes[4] > 0.1)	//thumbstick forward: + Roll
+  {
+	poseCmd.pose.orientation.x = -1;
+  }
+  if (msg->axes[4] < -0.1)	//thumbstick backwards: - Roll
+  {
+    poseCmd.pose.orientation.x = 1;
+  }
+  if (msg->axes[5] > 0.1)	//Joystick left: + pitch
+  {
+    poseCmd.pose.orientation.y = 1;
+  }
+  if (msg->axes[5] < -0.1)	//Joystick right: - pitch
+  {
+    poseCmd.pose.orientation.y = -1;
+  }
+  if (msg->axes[2] > 0.1)	//Joystick rotate left: + yaw
+  {
+    poseCmd.pose.orientation.z = 1;
+  }
+  if (msg->axes[2] < -0.1)	//Joystick rotate right: - yaw
+  {
+    poseCmd.pose.orientation.z = -1;
+  }
+  if (msg->axes[1] > 0.1)	//Joystick forward: Translate up
+  {
+    poseCmd.pose.position.z = -1;
+  }
+  if (msg->axes[1] < -0.1)	//Joystick backwards: Translate down
+  {
+    poseCmd.pose.position.z = 1;
+  }
+  if (msg->axes[0] > 0.1)	//Joystick left: Translate left
+  {
     poseCmd.pose.position.y = 1;
-	} 
-	else if (joy_msg->axes[4] < -0.25) {
+  }
+  if (msg->axes[0] < -0.1)	//Joystick right: Translate right
+  {
     poseCmd.pose.position.y = -1;
-	} else {poseCmd.pose.position.y = 0;}
+  }	
+  if (msg->buttons[0]==1)	//Joystick forward: Translate forward
+  {
+    poseCmd.pose.position.x = 1;
+  }
+  if (msg->buttons[1]==1)	//Joystick backward: Translate backwards
+  {
+    poseCmd.pose.position.x = -1;
+  }	
 
-	//publish commands
-	poseCmd.current_pose = current_pose;
-  	publisher_->publish(poseCmd);
+
+  if (!isEqual(poseCmd, oldCmd))
+  {
+    oldCmd = poseCmd;
+    shouldPub = true;
+  }
 }
 
-int main(int argc, char * argv[]){
+void JoystickReader::publish_message()
+{
+  if (shouldPub)
+  {
+    shouldPub = false;
+    RCLCPP_INFO(this->get_logger(), "Current pose: %f %f %f %f %f %f %f %f %i %i",
+			oldCmd.pose.position.x,
+			oldCmd.pose.position.y,
+			oldCmd.pose.position.z,
+			oldCmd.pose.orientation.x,
+			oldCmd.pose.orientation.y,
+			oldCmd.pose.orientation.z,
+			oldCmd.pose.orientation.w,
+			oldCmd.speed,
+			int(oldCmd.estop),
+			int(oldCmd.reset));//*/
+	  publisher_->publish(oldCmd);
+	}
+}
+
+
+
+int main(int argc, char ** argv)
+{
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<JoystickKinPublisher>());
+  rclcpp::spin(std::make_shared<JoystickReader>());
   rclcpp::shutdown();
   return 0;
 }

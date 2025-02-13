@@ -32,7 +32,7 @@ TestNode::TestNode(const rclcpp::NodeOptions &options)
   RCLCPP_INFO(this->get_logger(), node_name.c_str());
   
   subscription_ = this->create_subscription<interfaces::msg::ArmCmd>(
-  "arm_base_commands", 10, std::bind(&TestNode::topic_callback, this, std::placeholders::_1));
+  "arm_base_commands", 2, std::bind(&TestNode::topic_callback, this, std::placeholders::_1));
   
   publisher_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("arm_trajectory", 11);
   
