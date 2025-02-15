@@ -27,6 +27,8 @@ class BaseNode : public Node {
 
   virtual void set(MotorControl::SharedPtr control_msg);
 
+  virtual bool resetEncoder() = 0;
+
   virtual rcl_interfaces::msg::SetParametersResult reconfigure(
       const std::vector<rclcpp::Parameter>& params);
 

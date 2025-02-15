@@ -2,6 +2,7 @@
 #define ROS_PHOENIX_PHOENIX_COMPONENT
 
 #include "ros_phoenix/phoenix_nodes.hpp"
+#include "std_srvs/srv/trigger.hpp"
 
 namespace ros_phoenix {
 
@@ -17,6 +18,14 @@ class PhoenixComponent : public PhoenixNodeType {
         this->template create_subscription<ros_phoenix::msg::MotorControl>(
             name + "/set", 1,
             std::bind(&BaseNode::set, this, std::placeholders::_1));
+    this->srv_ = this->template create_service<std_srvs::srv::Trigger>(
+      name + "/reset_encoder",
+      [this](const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+         std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+      (void)request;  // Unused parameter
+      response->success = this->resetEncoder();
+      response->message = response->success ? "true" : "false";
+      });
   }
 
  private:
@@ -28,6 +37,7 @@ class PhoenixComponent : public PhoenixNodeType {
 
   rclcpp::Publisher<ros_phoenix::msg::MotorStatus>::SharedPtr pub_;
   rclcpp::Subscription<ros_phoenix::msg::MotorControl>::SharedPtr sub_;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_;
 };
 
 using TalonFX = PhoenixComponent<TalonFXNode>;

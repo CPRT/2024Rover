@@ -55,6 +55,11 @@ class PhoenixNode : public BaseNode {
     return status;
   }
 
+  virtual bool resetEncoder() {
+    this->controller_->SetSelectedSensorPosition(0);
+    return this->controller_->GetSelectedSensorPosition() == 0;
+  }
+
   virtual void set(MotorControl::SharedPtr control_msg) {
     if (this->follow_id_ >= 0) {
       return;

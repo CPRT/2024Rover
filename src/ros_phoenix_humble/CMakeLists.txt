@@ -86,6 +86,7 @@ find_package(rcutils REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(hardware_interface REQUIRED)
 find_package(pluginlib REQUIRED)
+find_package(std_srvs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MotorControl.msg"
@@ -115,7 +116,8 @@ add_library(${PROJECT_NAME}_components SHARED
 ament_target_dependencies(${PROJECT_NAME}_components
   "rclcpp"
   "rclcpp_components"
-  "rcutils")
+  "rcutils"
+  "std_srvs")
 target_link_libraries(${PROJECT_NAME}_components
   ${PHOENIX_LIBRARIES}
   Threads::Threads
