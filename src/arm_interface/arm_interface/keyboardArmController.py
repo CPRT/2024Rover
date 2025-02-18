@@ -10,8 +10,10 @@ from sensor_msgs.msg import Joy
 from std_msgs.msg import Int8, Float32, Bool
 from ros_phoenix.msg import MotorControl, MotorStatus
 from math import pi
+
 # import Jetson.GPIO as GPIO
 # import interfaces.msg as GPIOmsg
+
 
 class keyboardArmController(Node):
     def __init__(self):
@@ -31,22 +33,20 @@ class keyboardArmController(Node):
         # output_pin = output_pins.get(GPIO.model, None)
         # if output_pin is None:
         #     raise Exception('PWM not supported on this board')
-        
 
         # GPIO.setup(output_pin, GPIO.OUT, initial=GPIO.HIGH)
         # self.gripper = GPIO.PWM(output_pin, 50)
-        
-        #self.joystick = self.create_subscription(
-         #   Joy, "/joystick/arm", self.joy_callback, 5)
+
+        # self.joystick = self.create_subscription(
+        #   Joy, "/joystick/arm", self.joy_callback, 5)
         self.keyboard_publisher = self.create_publisher(String, "/keyboard_arm", 1)
-        
-        #90 deg = 3000000
-        
+
+        # 90 deg = 3000000
+
         while True:
-          cmd = String()
-          cmd.data = input();
-          self.keyboard_publisher.publish(cmd);
-        
+            cmd = String()
+            cmd.data = input()
+            self.keyboard_publisher.publish(cmd)
 
 
 def main(args=None):
@@ -56,7 +56,7 @@ def main(args=None):
     # GPIO.cleanup()
     node.destroy_node()
     rclpy.shutdown()
-    
+
+
 if __name__ == "__main__":
     main()
-

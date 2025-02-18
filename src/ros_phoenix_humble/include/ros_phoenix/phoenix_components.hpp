@@ -19,13 +19,13 @@ class PhoenixComponent : public PhoenixNodeType {
             name + "/set", 1,
             std::bind(&BaseNode::set, this, std::placeholders::_1));
     this->srv_ = this->template create_service<std_srvs::srv::Trigger>(
-      name + "/reset_encoder",
-      [this](const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-         std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
-      (void)request;  // Unused parameter
-      response->success = this->resetEncoder();
-      response->message = response->success ? "true" : "false";
-      });
+        name + "/reset_encoder",
+        [this](const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+               std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+          (void)request;  // Unused parameter
+          response->success = this->resetEncoder();
+          response->message = response->success ? "true" : "false";
+        });
   }
 
  private:

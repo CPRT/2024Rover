@@ -6,19 +6,22 @@ def generate_launch_description():
     return launch.LaunchDescription(
         [
             launch_ros.actions.Node(
-                package="arm_interface_inverse_kin",  
-                executable="joystick_kin_arm_controller",  
-                name="joystick_inveser_kin",  
+                package="arm_interface_inverse_kin",
+                executable="joystickKinArmController",
+                name="joystick_inveser_kin",
             ),
+            #launch_ros.actions.Node(
+            #    package="servo_pkg",
+            #    executable="i2c_Servo",
+            #    name="i2c_servo_node",
+            #),
+            #launch_ros.actions.Node(
+            #    package="gpio_controller",
+            #    executable="gpioManager",
+            #    name="gpio_manager",
+            #),
             launch_ros.actions.Node(
-                package="servo_pkg",
-                executable="i2c_Servo",
-                name="i2c_servo_node",
-            ),
-            launch_ros.actions.Node(
-                launch_ros.actions.Node(
                 package="joy", executable="joy_node", name="joystick"
             ),
-            )
         ]
     )
