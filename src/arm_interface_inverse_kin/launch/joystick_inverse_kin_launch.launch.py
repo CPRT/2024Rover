@@ -11,6 +11,11 @@ def generate_launch_description():
                 name="joystick_inveser_kin",  
             ),
             launch_ros.actions.Node(
+                package="servo_pkg",
+                executable="i2c_Servo",
+                name="i2c_servo_node",
+            ),
+            launch_ros.actions.Node(
                 launch_ros.actions.Node(
                 package="joy", executable="joy_node", name="joystick"
             ),
