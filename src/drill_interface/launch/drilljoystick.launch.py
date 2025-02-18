@@ -29,12 +29,8 @@ def generate_launch_description():
                 package="ros_phoenix",
                 plugin="ros_phoenix::TalonSRX",
                 name="drill",
-                parameters=[
-                    {"id": 8}, 
-                    {"P": 5.0}, 
-                    {"I": 0.0}, 
-                    {"D": 0.0}],
-            )
+                parameters=[{"id": 8}, {"P": 5.0}, {"I": 0.0}, {"D": 0.0}],
+            ),
         ],
         output="screen",
     )
