@@ -16,6 +16,13 @@ JoystickReader::JoystickReader()
   publisher_ = this->create_publisher<interfaces::msg::ArmCmd>("arm_base_commands", 2);
   timer_ = this->create_wall_timer(
   300ms, std::bind(&JoystickReader::publish_message, this));//*/
+
+  client_ = this->create_client<MoveServo>("servo_service");
+        
+  while (!client_->wait_for_service(std::chrono::seconds(1))) {
+      RCLCPP_INFO(this->get_logger(), "servo service not available, waiting again...");
+  }
+  
 }
 
 
@@ -84,6 +91,15 @@ void JoystickReader::topic_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
     poseCmd.pose.position.x = -1;
   }	
 
+  if (msg->buttons[14] = 1)
+  {
+    servo_request(15, 8, 0, 180);
+  }
+  if (msg->buttons[15] = 1)
+  {
+    servo_request(15, 71, 0, 180);
+  }
+
 
   if (!isEqual(poseCmd, oldCmd))
   {
@@ -110,6 +126,23 @@ void JoystickReader::publish_message()
 			int(oldCmd.reset));//*/
 	  publisher_->publish(oldCmd);
 	}
+}
+
+void send_request(int port, int pos, int min, int max)
+    {
+        auto request = std::make_shared<MoveServo::Request>();
+        request->port = port;
+        request->pos = pos;
+        request->min = min;
+        request->max = max;
+
+        auto future = client_->async_send_request(request);
+    }
+
+void servo_request(int req_port, int req_pos, int req_min, int req_max)
+{
+    RCLCPP_INFO(this->get_logger(), "Sending Request for: %d", req_pos);
+    send_request(req_port, req_pos, req_min, req_max);
 }
 
 
