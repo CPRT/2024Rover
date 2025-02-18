@@ -29,8 +29,12 @@ class gpioManager(Node):
             spi, self.NUM_PIXELS, pixel_order=PIXEL_ORDER, auto_write=False
         )
 
-        self.light_subscriber = self.create_subscription(Bool, "/solenoid", self.relayCallback, 10)
-        self.light_subscriber = self.create_subscription(Int8, "/light", self.neoCallback, 10)
+        self.light_subscriber = self.create_subscription(
+            Bool, "/solenoid", self.relayCallback, 10
+        )
+        self.light_subscriber = self.create_subscription(
+            Int8, "/light", self.neoCallback, 10
+        )
 
         self.lightRelay = ["GP68"]
         GPIO.setup(self.lightRelay, GPIO.OUT, initial=GPIO.LOW)
@@ -38,32 +42,30 @@ class gpioManager(Node):
         self.rate = self.create_rate(freq)
         period = 1 / freq
         self.timer = self.create_timer(period, self.timer_handler)
-    def timer_handler(self):
-        if(self.gpiooutput is True):
-            GPIO.output(self.lightRelay, GPIO.HIGH)
-        elif(self.gpiooutput is False):
-            GPIO.output(self.lightRelay, GPIO.LOW)
 
+    def timer_handler(self):
+        if self.gpiooutput is True:
+            GPIO.output(self.lightRelay, GPIO.HIGH)
+        elif self.gpiooutput is False:
+            GPIO.output(self.lightRelay, GPIO.LOW)
 
     def relayCallback(self, msg: Bool):
         self.get_logger().info("outputting gpio " + str(msg.data))
         self.gpiooutput = msg.data
-    
+
     def neoCallback(self, msg: Int8):
-        if(msg.data == 1): #red
+        if msg.data == 1:  # red
             self.pixels.fill(0xFF0000)
             self.pixels.show()
-        elif(msg.data == 2): #green
+        elif msg.data == 2:  # green
             self.pixels.fill(0x00FF00)
             self.pixels.show()
-        elif(msg.data == 3): #blue
+        elif msg.data == 3:  # blue
             self.pixels.fill(0x0000FF)
             self.pixels.show()
-        elif(msg.data == 4): #blue
+        elif msg.data == 4:  # blue
             self.pixels.fill(0)
             self.pixels.show()
-
-
 
 
 def main(args=None):
@@ -72,6 +74,7 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
-    
+
+
 if __name__ == "__main__":
     main()

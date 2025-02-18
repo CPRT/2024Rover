@@ -14,6 +14,8 @@
 #include "interfaces/srv/move_servo.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
+#include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/int8.hpp"
 #include "std_msgs/msg/string.hpp"
 
 bool isEqual(interfaces::msg::ArmCmd a, interfaces::msg::ArmCmd b);
@@ -25,6 +27,8 @@ class JoystickReader : public rclcpp::Node {
  private:
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr subscription_;
   rclcpp::Publisher<interfaces::msg::ArmCmd>::SharedPtr publisher_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr sol_publisher_;
+  rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr light_publisher_;
   rclcpp::Client<interfaces::srv::MoveServo>::SharedPtr client_;
   interfaces::msg::ArmCmd oldCmd;
   rclcpp::TimerBase::SharedPtr timer_;

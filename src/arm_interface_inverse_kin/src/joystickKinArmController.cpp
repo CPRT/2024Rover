@@ -17,10 +17,12 @@ JoystickReader::JoystickReader() : Node("JoystickReader") {
 
   client_ = this->create_client<interfaces::srv::MoveServo>("servo_service");
 
-  //while (!client_->wait_for_service(std::chrono::seconds(1))) {
-  //  RCLCPP_INFO(this->get_logger(),
-  //              "servo service not available, waiting again...");
-  //}
+  while (!client_->wait_for_service(std::chrono::seconds(1))) {
+    RCLCPP_INFO(this->get_logger(),
+                "servo service not available, waiting again...");
+  }
+  sol_publisher_ = this->create_publisher<std_msgs::msg::Bool>("/solenoid", 10);
+  light_publisher_ = this->create_publisher<std_msgs::msg::Int8>("/light", 10);
 }
 
 void JoystickReader::topic_callback(
@@ -94,11 +96,17 @@ void JoystickReader::topic_callback(
   if (msg->buttons[15] == 1) {
     servo_request(15, 71, 0, 180);  // end effector open
   }
-  if (msg->buttons[13] == 1) {
-    // led
+  if (msg->buttons[13])  // lights
+  {
+    std_msgs::msg::Int8 light_msg;
+    light_msg.data = 1;
+    light_publisher_->publish(light_msg);
   }
-  if (msg->buttons[16] == 1) {
-    // solenoid
+  if (msg->buttons[16])  // solenoid
+  {
+    std_msgs::msg::Bool sol_msg;
+    sol_msg.data = true;
+    sol_publisher_->publish(sol_msg);
   }
 
   if (!isEqual(poseCmd, oldCmd)) {
