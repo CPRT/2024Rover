@@ -20,8 +20,5 @@ def generate_launch_description():
                 executable="gpioManager",
                 name="gpio_manager",
             ),
-            launch_ros.actions.Node(
-                package="joy", executable="joy_node", name="joystick"
-            ),
         ]
     )

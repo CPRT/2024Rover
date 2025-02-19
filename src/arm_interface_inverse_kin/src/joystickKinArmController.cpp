@@ -96,16 +96,25 @@ void JoystickReader::topic_callback(
   if (msg->buttons[15] == 1) {
     servo_request(15, 71, 0, 180);  // end effector open
   }
-  if (msg->buttons[13])  // lights
+  if (msg->buttons[11])  // lights
   {
     std_msgs::msg::Int8 light_msg;
     light_msg.data = 1;
     light_publisher_->publish(light_msg);
   }
-  if (msg->buttons[16])  // solenoid
+  if (msg->buttons[12])  // lights
+  {
+    std_msgs::msg::Int8 light_msg;
+    light_msg.data = 2;
+    light_publisher_->publish(light_msg);
+  }
+  if (msg->buttons[13])  // solenoid
   {
     std_msgs::msg::Bool sol_msg;
     sol_msg.data = true;
+    sol_publisher_->publish(sol_msg);
+  }else{
+    sol_msg.data = false;
     sol_publisher_->publish(sol_msg);
   }
 
