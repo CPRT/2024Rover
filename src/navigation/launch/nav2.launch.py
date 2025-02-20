@@ -123,7 +123,7 @@ def generate_launch_description():
 
     cmd_vel_topic_cmd = DeclareLaunchArgument(
         "cmd_vel_topic",
-        default_value="/drive/cmd_vel",
+        default_value="/cmd_vel",
         description="cmd_vel topic (for remmaping)",
     )
 
