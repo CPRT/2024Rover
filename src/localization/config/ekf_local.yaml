@@ -28,7 +28,7 @@ local_ekf:
         # orientation
         true, true, true,
         # lineal vel 
-        false, true, false,
+        false, false, false,
         # angular vel
         false, false, false,
         # lineal acc
@@ -48,7 +48,7 @@ local_ekf:
         # orientation
         false, false, false,
         # lineal vel
-        true, true, false,
+        true, false, false,
         # angular vel
         false, false, true,
         # lineal acc
@@ -75,10 +75,10 @@ local_ekf:
         false, false, false,
       ]
     # imu0_nodelay: false
-    imu0_differential: false
-    imu0_relative: true
+    imu0_differential: true
+    imu0_relative: false
     # imu0_queue_size: 5
-    # imu0_pose_rejection_threshold: 0.8
+    imu0_pose_rejection_threshold: 0.8
     # imu0_twist_rejection_threshold: 0.8
     # imu0_linear_acceleration_rejection_threshold: 0.8
     imu0_remove_gravitational_acceleration: true

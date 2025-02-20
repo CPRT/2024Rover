@@ -24,11 +24,11 @@ global_ekf:
     odom0: /zed/zed_node/odom
     odom0_config: [
         # position
-        true, true, true,
+        true, true, false,
         # orientation
         true, true, true,
         # lineal vel 
-        false, true, false,
+        false, false, false,
         # angular vel
         false, false, false,
         # lineal acc
@@ -44,11 +44,11 @@ global_ekf:
     odom1: /drive/odom
     odom1_config: [
         # position
-        false, false, false,
+        false, false, true,
         # orientation
         false, false, false,
         # lineal vel
-        true, true, false,
+        true, false, false,
         # angular vel
         false, false, true,
         # lineal acc
@@ -93,10 +93,10 @@ global_ekf:
         false, false, false,
       ]
     # imu0_nodelay: false
-    imu0_differential: false
-    imu0_relative: true
+    imu0_differential: true
+    imu0_relative: false
     # imu0_queue_size: 5
-    # imu0_pose_rejection_threshold: 0.8
+    imu0_pose_rejection_threshold: 0.8
     # imu0_twist_rejection_threshold: 0.8
     # imu0_linear_acceleration_rejection_threshold: 0.8
     imu0_remove_gravitational_acceleration: true
@@ -126,7 +126,7 @@ global_ekf:
     pose0: /localization_pos
     pose0_config: [
         # position
-        true, true, true,
+        true, true, false,
         # orientation
         false, false, true,
         # lineal vel
@@ -139,7 +139,7 @@ global_ekf:
     pose0_differential: true
     pose0_relative: false
     # pose0_queue_size: 5
-    pose0_rejection_threshold: 5.0
+    pose0_rejection_threshold: 1.0
 
     # use_control: false
     # stamped_control: false
