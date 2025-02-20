@@ -119,6 +119,8 @@ class GridmapLayer : public nav2_costmap_2d::CostmapLayer {
                        double* min_x, double* min_y, double* max_x,
                        double* max_y);
 
+  bool getTransform(geometry_msgs::msg::TransformStamped& transform);
+
   std::string global_frame_;  ///< @brief The global frame for the costmap
   std::string map_frame_;     /// @brief frame that map is located in
 
@@ -144,6 +146,7 @@ class GridmapLayer : public nav2_costmap_2d::CostmapLayer {
   bool map_received_{false};
   bool map_received_in_update_bounds_{false};
   tf2::Duration transform_tolerance_;
+  grid_map::GridMap gridmap_in_;
 };
 
 }  // namespace cprt_costmap_plugins

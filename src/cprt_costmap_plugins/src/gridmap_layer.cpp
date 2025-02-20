@@ -52,7 +52,7 @@ void GridmapLayer::matchSize() {
   resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(),
             master->getResolution(), master->getOriginX(),
             master->getOriginY());
-  RCLCPP_WARN(logger_, "sx:%f, sy: %f, ox: %f, oy %f", getSizeInMetersX(),
+  RCLCPP_INFO(logger_, "sx:%f, sy: %f, ox: %f, oy %f", getSizeInMetersX(),
               getSizeInMetersY(), getOriginX(), getOriginY());
 }
 
@@ -90,52 +90,6 @@ void GridmapLayer::getParameters() {
   transform_tolerance_ = tf2::durationFromSec(temp_tf_tol);
 }
 
-void GridmapLayer::processMap(const grid_map::GridMap& new_map) {
-  // Get the transform from the grid map frame to the costmap frame
-  geometry_msgs::msg::TransformStamped transform;
-  try {
-    transform =
-        tf_buffer_->lookupTransform(layered_costmap_->getGlobalFrameID(),
-                                    new_map.getFrameId(), tf2::TimePointZero);
-  } catch (tf2::TransformException& ex) {
-    RCLCPP_WARN(logger_, "Gridmap layer: %s", ex.what());
-    return;
-  }
-
-  // Iterate through the grid map and copy the values to the costmap
-  for (grid_map::GridMapIterator it(new_map); !it.isPastEnd(); ++it) {
-    const grid_map::Index index(*it);
-    const float value = new_map.at(layer_name_, index);
-    const auto cost = interpretValue(value);
-
-    // Convert grid_map index to world coordinates
-    grid_map::Position position;
-    new_map.getPosition(index, position);
-
-    // Transform the position to the costmap frame
-    geometry_msgs::msg::PointStamped grid_map_point, costmap_point;
-    grid_map_point.header.frame_id = new_map.getFrameId();
-    grid_map_point.point.x = position.x();
-    grid_map_point.point.y = position.y();
-    grid_map_point.point.z = 0.0;
-
-    tf2::doTransform(grid_map_point, costmap_point, transform);
-
-    // Convert world coordinates to costmap coordinates
-    unsigned int mx, my;
-    const bool isValid =
-        worldToMap(costmap_point.point.x, costmap_point.point.y, mx, my);
-    if (isValid) {
-      costmap_[getIndex(mx, my)] = cost;
-      has_updated_data_ = true;
-    }
-  }
-  width_ = new_map.getLength().x();
-  height_ = new_map.getLength().y();
-  x_ = new_map.getPosition().x();
-  y_ = new_map.getPosition().y();
-}
-
 unsigned char GridmapLayer::interpretValue(double value) {
   // Gridmap unknown is NaN
   if (!std::isfinite(value)) {
@@ -155,10 +109,10 @@ unsigned char GridmapLayer::interpretValue(double value) {
 
 void GridmapLayer::incomingMap(
     const grid_map_msgs::msg::GridMap::SharedPtr new_map) {
-  grid_map::GridMap inputMap;
-  grid_map::GridMapRosConverter::fromMessage(*new_map, inputMap);
-  processMap(inputMap);
+  std::lock_guard<Costmap2D::mutex_t> guard(*getMutex());
+  grid_map::GridMapRosConverter::fromMessage(*new_map, gridmap_in_);
   map_received_ = true;
+  has_updated_data_ = true;
 }
 
 void GridmapLayer::updateBounds(double robot_x, double robot_y,
@@ -178,13 +132,39 @@ void GridmapLayer::updateBounds(double robot_x, double robot_y,
   }
 
   useExtraBounds(min_x, min_y, max_x, max_y);
+  geometry_msgs::msg::TransformStamped transform;
+  if (!getTransform(transform)) {
+    return;
+  }
+  geometry_msgs::msg::PointStamped grid_map_point, costmap_point;
+  width_ = gridmap_in_.getLength().x();
+  height_ = gridmap_in_.getLength().y();
+  grid_map_point.point.x = gridmap_in_.getPosition().x();
+  grid_map_point.point.y = gridmap_in_.getPosition().y();
+  grid_map_point.point.z = 0.0;
+  tf2::doTransform(grid_map_point, costmap_point, transform);
+  x_ = costmap_point.point.x;
+  y_ = costmap_point.point.y;
 
-  const int rad_x = width_ * 0.5;
-  const int rad_y = height_ * 0.5;
+  const double rad_x = width_ * 0.5;
+  const double rad_y = height_ * 0.5;
   *min_x = std::min(x_ - rad_x, *min_x);
   *min_y = std::min(y_ - rad_y, *min_y);
   *max_x = std::max(x_ + rad_x, *max_x);
   *max_y = std::max(y_ + rad_y, *max_y);
+}
+
+bool GridmapLayer::getTransform(
+    geometry_msgs::msg::TransformStamped& transform) {
+  try {
+    transform = tf_buffer_->lookupTransform(
+        layered_costmap_->getGlobalFrameID(), gridmap_in_.getFrameId(),
+        tf2::TimePointZero);
+    return true;
+  } catch (tf2::TransformException& ex) {
+    RCLCPP_WARN(logger_, "Gridmap layer: %s", ex.what());
+    return false;
+  }
 }
 
 void GridmapLayer::updateCosts(nav2_costmap_2d::Costmap2D& master_grid,
@@ -193,22 +173,44 @@ void GridmapLayer::updateCosts(nav2_costmap_2d::Costmap2D& master_grid,
   if (!enabled_ || !has_updated_data_) {
     return;
   }
-  if (!map_received_) {
-    static int count = 0;
-    // throttle warning down to only 1/10 message rate
-    if (++count == 10) {
-      RCLCPP_WARN(logger_,
-                  "Can't update gridmap costmap layer, no map received");
-      count = 0;
-    }
+  geometry_msgs::msg::TransformStamped transform;
+  if (!getTransform(transform)) {
     return;
   }
-  if (use_maximum_) {
-    updateWithMax(master_grid, min_i, min_j, max_i, max_j);
-  } else {
-    updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
-  }
+  unsigned char* master_array = master_grid.getCharMap();
+
   has_updated_data_ = false;
+  geometry_msgs::msg::PointStamped grid_map_point, costmap_point;
+
+  // Iterate through the grid map and copy the values to the costmap
+  for (grid_map::GridMapIterator it(gridmap_in_); !it.isPastEnd(); ++it) {
+    const grid_map::Index index(*it);
+    const float value = gridmap_in_.at(layer_name_, index);
+    const auto cost = interpretValue(value);
+
+    // Convert grid_map index to world coordinates
+    grid_map::Position position;
+    gridmap_in_.getPosition(index, position);
+
+    // Transform the position to the costmap frame
+    grid_map_point.point.x = position.x();
+    grid_map_point.point.y = position.y();
+    grid_map_point.point.z = 0.0;
+    tf2::doTransform(grid_map_point, costmap_point, transform);
+
+    // Convert world coordinates to costmap coordinates
+    unsigned int mx, my;
+    const bool isValid =
+        worldToMap(costmap_point.point.x, costmap_point.point.y, mx, my);
+    if (isValid) {
+      auto& index = master_array[getIndex(mx, my)];
+      if (use_maximum_) {
+        index = std::max(index, cost);
+      } else {
+        index = cost;
+      }
+    }
+  }
   current_ = true;
 }
 
